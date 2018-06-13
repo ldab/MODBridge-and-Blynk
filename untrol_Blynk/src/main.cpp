@@ -93,7 +93,6 @@ void saveConfigCallback () {
 
 void SendStuff()   // This function sends every 10 second to Virtual Pin
 {
-
   Blynk.virtualWrite(V1, strkw_mod+"KW ");
   Blynk.virtualWrite(V11, strkw_mod);
   Blynk.virtualWrite(V2, stramps_mod+"A ");
@@ -142,8 +141,8 @@ void NotifyControllerOffline()
       strthd_mod = "---";
 
       Alarm = 1;
-      Blynk.notify("ðŸš¨ {DEVICE_NAME} - OFF and/or disconnected!");
-      Blynk.email(DateAndTime()+" -ðŸš¨ {DEVICE_NAME} ALARM", "OFF and/or disconnected!");
+      Blynk.notify("🚨 {DEVICE_NAME} - OFF and/or disconnected!");
+      Blynk.email(DateAndTime()+" -🚨 {DEVICE_NAME} ALARM", "OFF and/or disconnected!");
     }
 }
 
@@ -241,50 +240,31 @@ void printChipInfo(){
 
 void button_change(void)
 {
-  volatile bool     g_buttonPressed = false;
-  volatile uint32_t g_buttonPressTime = -1;
+          WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 40);
+          WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, 6);
+          WiFiManagerParameter custom_blynk_token("blynk", "blynk token", blynk_token, 34);
 
-#if BOARD_BUTTON_ACTIVE_LOW
-  g_buttonPressed = !digitalRead(BOARD_BUTTON_PIN);
-#else
-  g_buttonPressed = digitalRead(BOARD_BUTTON_PIN);
-#endif
+          //WiFiManager
+          //Local intialization. Once its business is done, there is no need to keep it around
+          WiFiManager wifiManager;
 
-  if (g_buttonPressed) {
-    Serial.println("Hold the button to enter Config Mode");
-    g_buttonPressTime = millis();
-    Serial.println("Button pressed");
-    Serial.println(g_buttonPressTime);
-  } else {
-    int32_t buttonHoldTime = millis() - g_buttonPressTime;
-    Serial.println("Button time");
-    Serial.println(buttonHoldTime);
-    if (buttonHoldTime >= 10000) {
+          //set config save notify callback
+          wifiManager.setSaveConfigCallback(saveConfigCallback);
 
-      WiFiManager wifiManager;                //Local intialization. Once its business is done, there is no need to keep it around
+          //add all your parameters here
+          wifiManager.addParameter(&custom_mqtt_server);
+          wifiManager.addParameter(&custom_mqtt_port);
+          wifiManager.addParameter(&custom_blynk_token);
 
-      //reset settings - for testing
-      //wifiManager.resetSettings();
+          //reset settings - for testing
+          //wifiManager.resetSettings();
 
-      //wifiManager.setTimeout(120);          //wifiManager.setTimeout(120);
+          //sets timeout until configuration portal gets turned off
+          //useful to make it all retry or go to sleep
+          //in seconds
+          //wifiManager.setTimeout(120);
 
-      // id/name placeholder/prompt default length
-      WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 40);
-      WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, 6);
-      WiFiManagerParameter custom_blynk_token("blynk", "blynk token", blynk_token, 32);
-
-      //set config save notify callback
-      wifiManager.setSaveConfigCallback(saveConfigCallback);
-
-      //set static ip
-      wifiManager.setSTAStaticIPConfig(IPAddress(10,0,1,99), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
-
-      //add all your parameters here
-      wifiManager.addParameter(&custom_mqtt_server);
-      wifiManager.addParameter(&custom_mqtt_port);
-      wifiManager.addParameter(&custom_blynk_token);
-
-        if (!wifiManager.startConfigPortal(Host_Name.c_str())) {
+          if (!wifiManager.startConfigPortal(Host_Name.c_str())) {
           Serial.println("failed to connect and hit timeout");
           delay(3000);
           //reset and try again, or maybe put it to deep sleep
@@ -292,7 +272,6 @@ void button_change(void)
           delay(5000);
         }
 
-        //read updated parameters
         strcpy(mqtt_server, custom_mqtt_server.getValue());
         strcpy(mqtt_port, custom_mqtt_port.getValue());
         strcpy(blynk_token, custom_blynk_token.getValue());
@@ -316,9 +295,6 @@ void button_change(void)
           configFile.close();
           //end save
         }
-    }
-    g_buttonPressTime = -1;
-  }
 }
 
 void button_init()
@@ -328,44 +304,44 @@ void button_init()
 #else
   pinMode(BOARD_BUTTON_PIN, INPUT);
 #endif
-  attachInterrupt(BOARD_BUTTON_PIN, button_change, CHANGE);
+  //attachInterrupt(BOARD_BUTTON_PIN, button_change, LOW);
 }
 
 void spiffsinit(){
   //read configuration from FS json
-Serial.println("mounting FS...");
+  Serial.println("mounting FS...");
 
-if (SPIFFS.begin()) {
-        Serial.println("mounted file system");
-        if (SPIFFS.exists("/config.json")) {
-          //file exists, reading and loading
-          Serial.println("reading config file");
-          File configFile = SPIFFS.open("/config.json", "r");
-          if (configFile) {
-            Serial.println("opened config file");
-            size_t size = configFile.size();
-            // Allocate a buffer to store contents of the file.
-            std::unique_ptr<char[]> buf(new char[size]);
+  if (SPIFFS.begin()) {
+    Serial.println("mounted file system");
+    if (SPIFFS.exists("/config.json")) {
+      //file exists, reading and loading
+      Serial.println("reading config file");
+      File configFile = SPIFFS.open("/config.json", "r");
+      if (configFile) {
+        Serial.println("opened config file");
+        size_t size = configFile.size();
+        // Allocate a buffer to store contents of the file.
+        std::unique_ptr<char[]> buf(new char[size]);
 
-            configFile.readBytes(buf.get(), size);
-            DynamicJsonBuffer jsonBuffer;
-            JsonObject& json = jsonBuffer.parseObject(buf.get());
-            json.printTo(Serial);
-            if (json.success()) {
-              Serial.println("\nparsed json");
+        configFile.readBytes(buf.get(), size);
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& json = jsonBuffer.parseObject(buf.get());
+        json.printTo(Serial);
+        if (json.success()) {
+          Serial.println("\nparsed json");
 
-              strcpy(mqtt_server, json["mqtt_server"]);
-              strcpy(mqtt_port, json["mqtt_port"]);
-              strcpy(blynk_token, json["blynk_token"]);
+          strcpy(mqtt_server, json["mqtt_server"]);
+          strcpy(mqtt_port, json["mqtt_port"]);
+          strcpy(blynk_token, json["blynk_token"]);
 
-            } else {
-              Serial.println("failed to load json config");
-            }
-          }
+        } else {
+          Serial.println("failed to load json config");
         }
-      } else {
-        Serial.println("failed to mount FS");
       }
+    }
+  } else {
+    Serial.println("failed to mount FS");
+  }
 }
 
 void setup() {
@@ -373,6 +349,7 @@ void setup() {
     WiFi.hostname(Host_Name);
 
     Serial.begin(2400);               // Modbus communication runs at 2400 baud
+    Serial.println();
     MODBridge.begin(1, Serial);       // Modbus slave ID 1
     initLED();
     button_init();
@@ -380,7 +357,8 @@ void setup() {
     //clean FS, for testing
     //SPIFFS.format();
 
-    SPIFFS.begin();
+    spiffsinit();
+    //Blynk.begin(auth, ssid, pass);
 
     timerTOread = timer.setInterval(10000L, READModbus); //read the controller every 10 sec
     timerTOsend = timer.setInterval(15000L, SendStuff); //send stuff to the cloud every 15 second
@@ -389,23 +367,22 @@ void setup() {
     timer.disable(timerTOblink);
     timer.disable(timerTOread);
 
-    // id/name placeholder/prompt default length
-    WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 40);
-    WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, 6);
-    WiFiManagerParameter custom_blynk_token("blynk", "blynk token", blynk_token, 32);
-
     printChipInfo();
+    Serial.println(blynk_token);
+    Blynk.config(blynk_token);
     ArduinoOTA.begin();
 }
 
 void loop() {
     // put your main code here, to run repeatedly:
-    Blynk.run();
     timer.run();
     ArduinoOTA.handle();
 
-    button_change();
+    if (!digitalRead(BOARD_BUTTON_PIN)) button_change();
 
     if(WiFi.status()!=WL_CONNECTED) timer.disable(timerTOread); //DISABLE READINGS IF WIFI NOT CONNECTED TO AVOID CRASH
-    else timer.enable(timerTOread);
+    else {
+      Blynk.run();
+      timer.enable(timerTOread);
+    }
 }
