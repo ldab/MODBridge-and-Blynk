@@ -1,7 +1,6 @@
-#include <FS.h>                   //this needs to be first, or it all crashes and burns...
+#include <FS.h>             //this needs to be first, or it all crashes and burns...
 
-/* Comment this out to disable prints and save space */
-#define BLYNK_PRINT Serial
+#define BLYNK_PRINT Serial  /* Comment this out to disable prints and save space */
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
@@ -19,7 +18,8 @@
 
 #define ku16MBResponseTimeout 1000   //MODBUS timeout
 
-#define BOARD_BUTTON_PIN              0                    // Pin where user button is attached D3
+#define Host_Name ("MODBridge" + String(ESP.getChipId(), HEX))
+#define BOARD_BUTTON_PIN              0                    // Pin where user button is attached
 #define BOARD_BUTTON_ACTIVE_LOW       true                 // true if button is "active-low"
 #define BOARD_LED_PIN_R               14                   // Set R,G,B pins
 #define BOARD_LED_PIN_G               12
@@ -28,14 +28,24 @@
 #define BOARD_LED_BRIGHTNESS          100                  // 0..255 brightness control
 #define BOARD_PWM_MAX                 1023                 //ESP8266 10 bits PWM
 
+#define DIMM(x)    (((x)*(BOARD_LED_BRIGHTNESS))/255)
+#define RGB(r,g,b) (DIMM(r) << 16 | DIMM(g) << 8 | DIMM(b) << 0)
+
 #define BLYNK_GREEN     "#23C48E"
 #define BLYNK_YELLOW    "#ED9D00"
 #define BLYNK_RED       "#D3435C"
 #define BLYNK_BLUE      "#04C0F8"
 
-ModbusMaster MODBridge;
+enum Colors {
+  COLOR_BLACK   = RGB(0x00, 0x00, 0x00),
+  COLOR_WHITE   = RGB(0xFF, 0xFF, 0xE7),
+  COLOR_BLUE    = RGB(0x0D, 0x36, 0xFF),
+  COLOR_BLYNK   = RGB(0x2E, 0xFF, 0xB9),
+  COLOR_RED     = RGB(0xFF, 0x10, 0x08),
+  COLOR_MAGENTA = RGB(0xA7, 0x00, 0xFF),
+};
 
-String Host_Name = "MODBridge" + String(ESP.getChipId(), HEX);
+uint32_t colorToBlink = COLOR_BLACK;
 
 //Variables to be read
 float kw_mod = 0;
@@ -51,24 +61,24 @@ String strpf_mod = "---";
 float thd_mod = 0;
 String strthd_mod = "---";
 
-uint16_t Alarm=0;                   //Variable to store Alarm readings and flag alarm
 uint8_t NotifyCounter = 0;          //Notification counter to avoid multiple App Notification
-uint8_t AlarmNotify=0;              //Flag to notify when Alarm condition
 uint8_t result;                     //return flag from MODBUS read
 
 char mqtt_server[40];
-char mqtt_port[6] = "8080";
+char mqtt_port[6] = "1883";
 char blynk_token[34] = "YOUR_BLYNK_TOKEN";
 
 //timerID names
 int timerTOread;
 int timerTOsend;
 int timerTOblink;
+int timerToLED;
 
 bool NextAddress = false;           //variable to continue reading other registers if succesful
-bool BlinkButton = false;           //variable to blink LED or Virtual button
 bool shouldSaveConfig = false;      //flag for saving data
+bool LEDflick = false;
 
+ModbusMaster MODBridge;       //initialize Modbus Master
 BlynkTimer timer;             //Up To 16 Timers
 WidgetRTC rtc;                //Initiate RTC
 WidgetLED ledStatus(V5);      //LED Status
@@ -93,9 +103,9 @@ void saveConfigCallback () {
 
 void SendStuff()   // This function sends every 10 second to Virtual Pin
 {
-  Blynk.virtualWrite(V1, strkw_mod+"KW ");
+  Blynk.virtualWrite(V1, strkw_mod+"KW");
   Blynk.virtualWrite(V11, strkw_mod);
-  Blynk.virtualWrite(V2, stramps_mod+"A ");
+  Blynk.virtualWrite(V2, stramps_mod+"A");
   Blynk.virtualWrite(V12, stramps_mod);
   Blynk.virtualWrite(V0, strvolts_mod+"V");
   Blynk.virtualWrite(V14, strvolts_mod);
@@ -140,7 +150,6 @@ void NotifyControllerOffline()
       strpf_mod = "---";
       strthd_mod = "---";
 
-      Alarm = 1;
       Blynk.notify("🚨 {DEVICE_NAME} - OFF and/or disconnected!");
       Blynk.email(DateAndTime()+" -🚨 {DEVICE_NAME} ALARM", "OFF and/or disconnected!");
     }
@@ -148,7 +157,7 @@ void NotifyControllerOffline()
 
 void blinkButton()
 {
-    if(Alarm != 0) ledStatus.setColor(BLYNK_RED);
+    if(NotifyCounter) ledStatus.setColor(BLYNK_RED);
     else ledStatus.setColor(BLYNK_GREEN);
 
         //color set, now blink:
@@ -173,7 +182,6 @@ void READModbus(){
       pf_mod = *(float*)&supportcalc;
 
       NotifyCounter = 0;
-      Alarm = 0;
 
       //Convert Float to String and then we can set to "---" when disconnected;
       strkw_mod=String(kw_mod);
@@ -233,7 +241,6 @@ void printChipInfo(){
   Serial.println (ESP.getFreeHeap());
   Serial.print ("Reset Reason:");
   Serial.println (ESP.getResetReason());
-
   Serial.println("local ip");
   Serial.println(WiFi.localIP());
 }
@@ -244,7 +251,6 @@ void button_change(void)
           WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, 6);
           WiFiManagerParameter custom_blynk_token("blynk", "blynk token", blynk_token, 34);
 
-          //WiFiManager
           //Local intialization. Once its business is done, there is no need to keep it around
           WiFiManager wifiManager;
 
@@ -260,14 +266,12 @@ void button_change(void)
           //wifiManager.resetSettings();
 
           //sets timeout until configuration portal gets turned off
-          //useful to make it all retry or go to sleep
-          //in seconds
-          //wifiManager.setTimeout(120);
+          //useful to make it all retry or go to sleep in seconds
+          wifiManager.setTimeout(120);
 
           if (!wifiManager.startConfigPortal(Host_Name.c_str())) {
           Serial.println("failed to connect and hit timeout");
           delay(3000);
-          //reset and try again, or maybe put it to deep sleep
           ESP.reset();
           delay(5000);
         }
@@ -289,7 +293,6 @@ void button_change(void)
           if (!configFile) {
             Serial.println("failed to open config file for writing");
           }
-
           json.printTo(Serial);
           json.printTo(configFile);
           configFile.close();
@@ -344,6 +347,17 @@ void spiffsinit(){
   }
 }
 
+void blinkLED(){
+    if (LEDflick) {
+      setRGB(COLOR_BLACK);
+      LEDflick = !LEDflick;
+    }
+    else {
+      setRGB(colorToBlink);
+      LEDflick = !LEDflick;
+    }
+}
+
 void setup() {
     // put your setup code here, to run once:
     WiFi.hostname(Host_Name);
@@ -351,24 +365,23 @@ void setup() {
     Serial.begin(2400);               // Modbus communication runs at 2400 baud
     Serial.println();
     MODBridge.begin(1, Serial);       // Modbus slave ID 1
-    initLED();
-    button_init();
+
+    initLED();                        //LED intialization
+    button_init();                    //Config on request button intialization
+    spiffsinit();                     //SPIFFS intialization
 
     //clean FS, for testing
     //SPIFFS.format();
 
-    spiffsinit();
-    //Blynk.begin(auth, ssid, pass);
-
     timerTOread = timer.setInterval(10000L, READModbus); //read the controller every 10 sec
     timerTOsend = timer.setInterval(15000L, SendStuff); //send stuff to the cloud every 15 second
-    timerTOblink = timer.setInterval(800L, blinkButton);  //blink virtual Button every 0.8sec - LED
+    timerTOblink = timer.setInterval(800L, blinkButton);  //blink virtual LED every 0.8sec - LED
+    timerToLED = timer.setInterval(500L, blinkLED);  //blink virtual LED every 0.8sec - LED
     timer.disable(timerTOsend);
     timer.disable(timerTOblink);
     timer.disable(timerTOread);
 
-    printChipInfo();
-    Serial.println(blynk_token);
+    printChipInfo();                  //Print board info
     Blynk.config(blynk_token);
     ArduinoOTA.begin();
 }
@@ -378,10 +391,14 @@ void loop() {
     timer.run();
     ArduinoOTA.handle();
 
-    if (!digitalRead(BOARD_BUTTON_PIN)) button_change();
+    if (!digitalRead(BOARD_BUTTON_PIN)) button_change();      //If button is pressed, start configuration portal
 
-    if(WiFi.status()!=WL_CONNECTED) timer.disable(timerTOread); //DISABLE READINGS IF WIFI NOT CONNECTED TO AVOID CRASH
+    if(WiFi.status()!=WL_CONNECTED) {
+      timer.disable(timerTOread); //DISABLE READINGS IF WIFI NOT CONNECTED TO AVOID CRASH
+      colorToBlink = COLOR_RED;
+    }
     else {
+      colorToBlink = COLOR_BLYNK;
       Blynk.run();
       timer.enable(timerTOread);
     }
