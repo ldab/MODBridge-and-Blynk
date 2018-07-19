@@ -3,8 +3,8 @@
 This is a working example of open source MODBridge working with the SDM120 Energy meter.
 
 "link to tinddie MODBridge"
-SDM120 Energy meter: <p><a href="http://gestyy.com/wJ2uKW" target="_blank" rel="noopener">SDM120 Modbus, Single-Phase</a></p>
-The firmware has been writen using PlatformIO which is a nice, neat IDE, check it out: <p><a title="Learn how to install PlatformIO IDE" href="https://platformio.org/get-started" target="_blank" rel="noopener">https://platformio.org/get-started</a></p>
+SDM120 Energy meter: <a href="http://gestyy.com/wJ2uKW" target="_blank" rel="noopener">SDM120 Modbus, Single-Phase</a></p>
+The firmware has been writen using PlatformIO which is a nice, neat IDE, check it out: <p><a title="Learn how to install PlatformIO IDE" href="https://platformio.org/get-started" target="_blank" rel="noopener">https://platformio.org/get-started</a>
 
 If you're feeling brave and want to customize or improve the Firmware Over the Air (OTA), check this link: <p><a title="Over-the-Air (OTA) update" href="http://docs.platformio.org/en/latest/platforms/espressif8266.html#over-the-air-ota-update" target="_blank" rel="noopener">http://docs.platformio.org/en/latest/platforms/espressif8266.html#over-the-air-ota-update</a></p> basically you need to run <blockquote>
 <p>&lt;blockquote&gt;<br />&lt;p&gt;platformio run --target upload --upload-port IP_ADDRESS_HERE&lt;/p&gt;<br />&lt;/blockquote&gt;</p>
