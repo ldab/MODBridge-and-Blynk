@@ -4,7 +4,7 @@
 <li>MODBridge can be find at:&nbsp;<a href="https://www.untrol.io" target="_blank" rel="noopener">untrol.io</a>&nbsp;and&nbsp;<a href="https://www.tindie.com/" target="_blank" rel="noopener">Tindie</a></li>
 <li>SDM120 Energy meter: <a href="http://gestyy.com/wJ2uKW" target="_blank" rel="noopener">SDM120 Modbus, Single-Phase</a></li>
 </ul>
-<p>The firmware has been writen using PlatformIO which is a nice, neat IDE, check it out:&nbsp;<a title="Learn how to install PlatformIO IDE" href="https://platformio.org/get-started" target="_blank" rel="noopener">https://platformio.org/get-started</a></p>
+<p>The firmware has been writen using PlatformIO which is a nice, neat IDE, check it out:&nbsp;<a href="https://platformio.org/get-started" target="_blank" rel="noopener">Learn how to install PlatformIO IDE</a></p>
 <p>If you're feeling brave and want to customize or improve the Firmware Over the Air (OTA), check this link: <a title="Over-the-Air (OTA) update" href="http://docs.platformio.org/en/latest/platforms/espressif8266.html#over-the-air-ota-update" target="_blank" rel="noopener">Over-the-Air (OTA) update</a> basically you change your sketch and upload it by running the following line on PlatformIO terminal:</p>
 <blockquote>
 <p><span style="color: #ff0000;"><em>platformio run --target upload --upload-port IP_ADDRESS_HERE</em></span></p>
