@@ -103,7 +103,7 @@ void saveConfigCallback () {
 
 void SendStuff()   // This function sends every 10 second to Virtual Pin
 {
-  Blynk.virtualWrite(V1, strkw_mod+"KW");
+  Blynk.virtualWrite(V1, strkw_mod+"W");
   Blynk.virtualWrite(V11, strkw_mod);
   Blynk.virtualWrite(V2, stramps_mod+"A");
   Blynk.virtualWrite(V12, stramps_mod);
