@@ -28,6 +28,9 @@
 #define BOARD_LED_BRIGHTNESS          100                  // 0..255 brightness control
 #define BOARD_PWM_MAX                 1023                 //ESP8266 10 bits PWM
 
+#define MODBUS_BAUDRADE                2400
+#define MODBUS_ADDRESS                 1
+
 #define DIMM(x)    (((x)*(BOARD_LED_BRIGHTNESS))/255)
 #define RGB(r,g,b) (DIMM(r) << 16 | DIMM(g) << 8 | DIMM(b) << 0)
 
@@ -362,9 +365,9 @@ void setup() {
     // put your setup code here, to run once:
     WiFi.hostname(Host_Name);
 
-    Serial.begin(2400);               // Modbus communication runs at 2400 baud
+    Serial.begin(MODBUS_BAUDRADE);               // Modbus communication runs at 2400 baud
     Serial.println();
-    MODBridge.begin(1, Serial);       // Modbus slave ID 1
+    MODBridge.begin(MODBUS_ADDRESS, Serial);       // Modbus slave ID 1
 
     initLED();                        //LED intialization
     button_init();                    //Config on request button intialization
