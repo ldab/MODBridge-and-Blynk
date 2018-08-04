@@ -114,7 +114,7 @@ void SendStuff()   // This function sends every 10 second to Virtual Pin
   Blynk.virtualWrite(V14, strvolts_mod);
   Blynk.virtualWrite(V3, strpf_mod);
   Blynk.virtualWrite(V13, strpf_mod);
-  Blynk.virtualWrite(V4, strkw_mod+"KWH");
+  Blynk.virtualWrite(V4, strkwh_mod+"KWH");
   Blynk.virtualWrite(V7, strthd_mod+"%");
 
   int RSSI = WiFi.RSSI();
@@ -195,16 +195,23 @@ void READModbus(){
     else  NotifyControllerOffline();
 
     if (NextAddress) {
-      result = MODBridge.readInputRegisters(0x48, 2); // Read 2 registers starting at 0x0048)
-      if (result == MODBridge.ku8MBSuccess)   kwh_mod = ((MODBridge.getResponseBuffer(0x00)<<16) | MODBridge.getResponseBuffer(0x01));    //read buffer register 00
+      uint32_t supportcalc;
+      result = MODBridge.readInputRegisters(0x48, 2); // Read 1 registers starting at 0x0002)
+      if (result == MODBridge.ku8MBSuccess)   {
+        supportcalc = ((MODBridge.getResponseBuffer(0x00)<<16) | MODBridge.getResponseBuffer(0x01));    //read buffer register 00
+        kwh_mod = *(float*)&supportcalc;
+      }
       else kwh_mod = sqrt(-1);
 
-      result = MODBridge.readInputRegisters(0xEA, 2); // Read 2 registers starting at 0x00EA)
-      if (result == MODBridge.ku8MBSuccess)   thd_mod = ((MODBridge.getResponseBuffer(0x00)<<16) | MODBridge.getResponseBuffer(0x01));    //read buffer register 00
+      result = MODBridge.readInputRegisters(0xEA, 2); // Read 1 registers starting at 0x0002)
+      if (result == MODBridge.ku8MBSuccess)   {
+        supportcalc = ((MODBridge.getResponseBuffer(0x00)<<16) | MODBridge.getResponseBuffer(0x01));    //read buffer register 00
+        thd_mod = *(float*)&supportcalc;
+      }
       else thd_mod = sqrt(-1);
 
-      strkw_mod=String(kwh_mod);
-      strthd_mod=String(thd_mod);
+      strkwh_mod=String(kwh_mod,2);
+      strthd_mod=String(thd_mod,2);
     } // end of NextAddress
 }//end of READModbus
 
