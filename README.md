@@ -3,7 +3,10 @@
 <p><img style="display: block; margin-left: auto; margin-right: auto;" src="https://cdn.tindiemedia.com/images/resize/65vChiPotfqY2uvdVtShhdQLEnE=/p/full-fit-in/2400x1600/i/348611/products/2018-08-04T20%3A09%3A13.394Z-MODBridge%20side.png" alt="MODBridge MODBUS cloud" width="320" height="315" /></p>
 <ul>
 <li>MODBridge can be find at:&nbsp;<a href="http://untrol.io/" target="_blank" rel="noopener">untrol.io</a>&nbsp;and&nbsp;<a href="https://www.tindie.com/products/13708/">Tindie</a></li>
-<li>SDM120 Energy meter: <a href="http://s.click.aliexpress.com/e/blaegsBQ" target="_parent">Single Phase Din Rail Energy Meter SDM120-Modbus</a></li>
+<li>SDM120 Energy meter: <a href="http://s.click.aliexpress.com/e/cACmR19O" target="_parent">SDM120 Modbus RS485 Single Phase DIN Rail Energy Meter</a></li>
+<li>SDM220 Energy meter: <a href="http://s.click.aliexpress.com/e/c9nfQmli" target="_parent">SDM220-Modbus Single Phase DIN Rail Energy meter, RS485 Modbus</a></li>
+<li>SDM630 Energy meter: <a href="http://s.click.aliexpress.com/e/z6yEJCG" target="_parent">SDM630-Modbus  Din Rail Three Phase Energy Meter. RS485</a></li>
+<li>Programming dongle for UART/USB if not, OTA: <a href="http://s.click.aliexpress.com/e/g23Usug" target="_parent">USB to serial UART Programming</a></li>
 </ul>
 <p>The firmware has been writen using PlatformIO which is a nie, neat IDE, check it out:&nbsp;<a href="https://platformio.org/platformio-ide" target="_blank" rel="noopener">Learn how to install PlatformIO IDE</a></p>
 <p>If you're feeling brave and want to customize or improve the Firmware Over the Air (OTA), check this link: <a title="Over-the-Air (OTA) update" href="http://docs.platformio.org/en/latest/platforms/espressif8266.html#over-the-air-ota-update" target="_blank" rel="noopener">Over-the-Air (OTA) update</a> basically you change your sketch and upload it by running the following line on PlatformIO terminal:</p>
