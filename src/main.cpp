@@ -1,3 +1,20 @@
+/*MODBridge - Copyright (c) 2018 Leonardo Bispo.  All right reserved.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE. */
+
 #include <FS.h>             //this needs to be first, or it all crashes and burns...
 
 #define BLYNK_PRINT Serial  /* Comment this out to disable prints and save space */
@@ -18,7 +35,7 @@
 
 #define ku16MBResponseTimeout 1000   //MODBUS timeout
 
-#define Host_Name ("MODBridge" + String(ESP.getChipId(), HEX))
+#define Host_Name                     ("MODBridge" + String(ESP.getChipId(), HEX))
 #define BOARD_BUTTON_PIN              0                    // Pin where user button is attached
 #define BOARD_BUTTON_ACTIVE_LOW       true                 // true if button is "active-low"
 #define BOARD_LED_PIN_R               14                   // Set R,G,B pins
@@ -117,7 +134,7 @@ void SendStuff()   // This function sends every 10 second to Virtual Pin
   Blynk.virtualWrite(V4, strkwh_mod+"KWH");
   Blynk.virtualWrite(V7, strthd_mod+"%");
 
-  int RSSI = WiFi.RSSI();
+  sint8_t RSSI = WiFi.RSSI();
   if(RSSI>=-75)         ledWIFI.setColor(BLYNK_GREEN);
   else if(RSSI<-85)     ledWIFI.setColor(BLYNK_YELLOW);
   else                  ledWIFI.setColor(BLYNK_RED);
@@ -373,8 +390,8 @@ void setup() {
     WiFi.hostname(Host_Name);
 
     Serial.begin(MODBUS_BAUDRADE);               // Modbus communication runs at 2400 baud
-    Serial.println();
     MODBridge.begin(MODBUS_ADDRESS, Serial);       // Modbus slave ID 1
+    Serial.println();
 
     initLED();                        //LED intialization
     button_init();                    //Config on request button intialization
@@ -383,10 +400,10 @@ void setup() {
     //clean FS, for testing
     //SPIFFS.format();
 
-    timerTOread = timer.setInterval(10000L, READModbus); //read the controller every 10 sec
-    timerTOsend = timer.setInterval(15000L, SendStuff); //send stuff to the cloud every 15 second
+    timerTOread  = timer.setInterval(10000L, READModbus); //read the controller every 10 sec
+    timerTOsend  = timer.setInterval(15000L, SendStuff); //send stuff to the cloud every 15 second
     timerTOblink = timer.setInterval(800L, blinkButton);  //blink virtual LED every 0.8sec - LED
-    timerToLED = timer.setInterval(500L, blinkLED);  //blink virtual LED every 0.8sec - LED
+    timerToLED   = timer.setInterval(500L, blinkLED);  //blink virtual LED every 0.8sec - LED
     timer.disable(timerTOsend);
     timer.disable(timerTOblink);
     timer.disable(timerTOread);
